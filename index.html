@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="임산부 맞춤형 약물 복용 가이드 MVP 앱 구축 — 프로젝트 제안서" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['SUIT Variable', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              600: '#0284c7',
+              700: '#0369a1'
+            }
+          },
+          boxShadow: {
+            soft: '0 10px 30px -18px rgba(15, 23, 42, 0.35)'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root { color-scheme: light; font-size: 16px; }
+    body {
+      font-family: 'SUIT Variable', sans-serif;
+      font-size: 1rem;
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(14, 165, 233, 0.08), transparent 42%),
+        radial-gradient(circle at 88% 82%, rgba(2, 132, 199, 0.06), transparent 48%);
+    }
+
+    .doc-content h1, .doc-content h2, .doc-content h3, .doc-content h4 {
+      color: rgb(15 23 42); font-weight: 700; letter-spacing: -0.01em;
+      line-height: 1.3; margin-top: 1.6em; margin-bottom: 0.7em;
+    }
+    .doc-content h1 { font-size: 2rem; margin-top: 0.2em; }
+    .doc-content h2 { font-size: 1.4rem; }
+    .doc-content h3 { font-size: 1.15rem; }
+    .doc-content p, .doc-content li {
+      color: rgb(51 65 85); line-height: 1.8; font-size: 1rem;
+    }
+    .doc-content p, .doc-content ul, .doc-content ol,
+    .doc-content table, .doc-content pre, .doc-content blockquote {
+      margin-bottom: 1rem;
+    }
+    .doc-content ul, .doc-content ol { padding-left: 1.2rem; }
+    .doc-content ul { list-style: disc; }
+    .doc-content ol { list-style: decimal; }
+    .doc-content table {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid rgb(226 232 240); border-radius: 0.75rem;
+      overflow: hidden; font-size: 1rem;
+    }
+    .doc-content th, .doc-content td {
+      border: 1px solid rgb(226 232 240); padding: 0.7rem 0.8rem;
+      text-align: left; vertical-align: top;
+    }
+    .doc-content th {
+      background: rgb(248 250 252); color: rgb(30 41 59); font-weight: 600;
+    }
+    .doc-content pre, .doc-content code {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+    .doc-content pre {
+      background: rgb(15 23 42); color: rgb(226 232 240);
+      padding: 1rem; border-radius: 0.75rem; overflow-x: auto;
+      font-size: 1rem; line-height: 1.65;
+    }
+    .doc-content p code, .doc-content li code,
+    .doc-content td code, .doc-content th code {
+      background: rgb(241 245 249); color: rgb(15 23 42);
+      border: 1px solid rgb(226 232 240); border-radius: 0.4rem;
+      padding: 0.08rem 0.4rem; font-size: 1em;
+    }
+    .doc-content blockquote {
+      border-left: 3px solid rgb(14 165 233); padding-left: 0.85rem;
+      color: rgb(71 85 105); background: rgb(240 249 255);
+      border-radius: 0.5rem; padding-top: 0.55rem; padding-bottom: 0.55rem;
+    }
+
+    .text-xs { font-size: 1rem !important; }
+
+    .timeline { position: relative; padding-left: 2rem; }
+    .timeline::before {
+      content: ''; position: absolute; left: 0.6rem; top: 0.25rem; bottom: 0.25rem;
+      width: 2px; background: rgb(186 230 253);
+    }
+    .timeline-item { position: relative; margin-bottom: 1.75rem; }
+    .timeline-item::before {
+      content: ''; position: absolute; left: -1.65rem; top: 0.35rem;
+      width: 0.75rem; height: 0.75rem; border-radius: 50%;
+      background: rgb(2 132 199); border: 3px solid rgb(224 242 254);
+    }
+
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    #sidebar-backdrop { display: none; }
+    #sidebar-backdrop.open { display: block; }
+    @media (max-width: 1023px) {
+      #sidebar { transform: translateX(-100%); transition: transform 0.2s ease; position: fixed; top: 0; left: 0; z-index: 40; height: 100vh; width: 80vw; max-width: 320px; }
+      #sidebar.open { transform: translateX(0); }
+    }
+  </style>
+  <title>임산부 맞춤형 약물 복용 가이드 MVP 앱 구축 — 프로젝트 제안서</title>
+</head>
+<body class="text-slate-800 font-sans antialiased">
+  <div class="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10">
+
+    <!-- Header -->
+    <header class="mb-6 rounded-2xl border border-slate-200/70 bg-white/85 px-5 py-3 shadow-soft backdrop-blur">
+      <div class="flex flex-wrap items-center gap-3">
+        <button id="sidebar-toggle" class="lg:hidden inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:border-sky-300 hover:text-sky-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          메뉴
+        </button>
+        <a href="#home" class="inline-flex items-center shrink-0 text-sm font-bold tracking-tight text-slate-800">
+          프로젝트 제안서
+        </a>
+        <div class="hidden sm:block ml-auto text-right">
+          <p class="text-sm font-semibold tracking-[0.04em] text-sky-700/90">임산부 맞춤형 약물 복용 가이드 MVP 앱 구축</p>
+          <p class="text-xs text-slate-400">프로젝트 제안서</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+
+      <!-- Sidebar -->
+      <div id="sidebar-backdrop" class="fixed inset-0 bg-black/30 z-30 lg:hidden" onclick="closeSidebar()"></div>
+      <aside id="sidebar" class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-soft backdrop-blur lg:sticky lg:top-6 lg:h-[calc(100vh-4rem)] lg:overflow-auto">
+        <nav id="nav" class="space-y-1">
+          <a href="#home" data-page="home" class="nav-link block rounded-xl border px-3 py-2 text-sm border-sky-200 bg-sky-50 font-medium text-sky-700">홈</a>
+          <div class="my-3 border-t border-slate-200"></div>
+          <p class="mb-2 mt-1 px-1 text-sm font-semibold tracking-[0.14em] text-slate-400">제안서</p>
+          <a href="#overview" data-page="overview" class="nav-link block rounded-xl border border-transparent px-3 py-2 text-sm text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900">프로젝트 소개</a>
+          <a href="#estimate" data-page="estimate" class="nav-link block rounded-xl border border-transparent px-3 py-2 text-sm text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900">견적서</a>
+          <a href="#manday" data-page="manday" class="nav-link block rounded-xl border border-transparent px-3 py-2 text-sm text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900">공수계산서</a>
+          <a href="#prd" data-page="prd" class="nav-link block rounded-xl border border-transparent px-3 py-2 text-sm text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900">PRD</a>
+          <div class="my-3 border-t border-slate-200"></div>
+          <p class="mb-2 mt-1 px-1 text-sm font-semibold tracking-[0.14em] text-slate-400">일정 & 경험</p>
+          <a href="#timeline" data-page="timeline" class="nav-link block rounded-xl border border-transparent px-3 py-2 text-sm text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900">일정 제안</a>
+          <a href="#portfolio" data-page="portfolio" class="nav-link block rounded-xl border border-transparent px-3 py-2 text-sm text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900">유사 프로젝트 경험</a>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="min-w-0">
+
+        <!-- PAGE: Home -->
+        <div id="page-home" class="page-section active space-y-6">
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-6 shadow-soft backdrop-blur md:p-8">
+            <p class="mb-2 text-xs font-semibold tracking-[0.2em] text-sky-700/80">프로젝트 제안서</p>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">임산부 맞춤형 약물 복용 가이드 MVP 앱 구축</h1>
+            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">임신 주수·모유 수유 여부 등 개인 상태에 따라 약물 위험도를 판정하고, 약사의 노하우가 반영된 텍스트 기반 안심 가이드를 제공하는 MVP 모바일 앱과 관리자 웹을 구축합니다. 명확한 If-Then 조건부 로직으로 신뢰도 높은 복약 정보를 전달합니다.</p>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span class="inline-flex rounded-full border border-sky-200 bg-sky-100 px-2.5 py-1 text-sm font-semibold tracking-[0.12em] text-sky-700">2,700만원</span>
+              <span class="inline-flex rounded-full border border-sky-200 bg-sky-100 px-2.5 py-1 text-sm font-semibold tracking-[0.12em] text-sky-700">90일</span>
+              <span class="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-sm font-semibold tracking-[0.12em] text-amber-700">헬스케어 · 모바일 앱 · 관리자 웹</span>
+              <a href="https://www.wishket.com/project/153527/" target="_blank" rel="noopener noreferrer"
+                 class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm font-medium text-slate-500 transition hover:border-sky-300 hover:text-sky-700">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                원본 공고
+              </a>
+            </div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <a href="#overview" class="group rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-sky-100 text-sky-700 border-sky-200">소개</div>
+              <h2 class="text-lg font-semibold tracking-tight text-slate-900 group-hover:text-sky-700">프로젝트 소개</h2>
+              <p class="mt-2 text-sm leading-7 text-slate-600">공고 분석, If-Then 판정 알고리즘 설계, 기술 스택 제안</p>
+            </a>
+            <a href="#estimate" class="group rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-sky-100 text-sky-700 border-sky-200">비용</div>
+              <h2 class="text-lg font-semibold tracking-tight text-slate-900 group-hover:text-sky-700">견적서</h2>
+              <p class="mt-2 text-sm leading-7 text-slate-600">OCR 포함/비포함 옵션별 항목 비용 산출</p>
+            </a>
+            <a href="#manday" class="group rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-sky-100 text-sky-700 border-sky-200">공수</div>
+              <h2 class="text-lg font-semibold tracking-tight text-slate-900 group-hover:text-sky-700">공수계산서</h2>
+              <p class="mt-2 text-sm leading-7 text-slate-600">기능별 개발 공수(M/D) 상세 산출</p>
+            </a>
+            <a href="#prd" class="group rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-amber-100 text-amber-700 border-amber-200">기획</div>
+              <h2 class="text-lg font-semibold tracking-tight text-slate-900 group-hover:text-sky-700">PRD</h2>
+              <p class="mt-2 text-sm leading-7 text-slate-600">사용자 유형, 기능 요구사항, 약물 DB 스키마</p>
+            </a>
+            <a href="#timeline" class="group rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-amber-100 text-amber-700 border-amber-200">일정</div>
+              <h2 class="text-lg font-semibold tracking-tight text-slate-900 group-hover:text-sky-700">일정 제안</h2>
+              <p class="mt-2 text-sm leading-7 text-slate-600">4단계 마일스톤 및 산출물 일정표</p>
+            </a>
+            <a href="#portfolio" class="group rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-amber-100 text-amber-700 border-amber-200">경험</div>
+              <h2 class="text-lg font-semibold tracking-tight text-slate-900 group-hover:text-sky-700">유사 프로젝트 경험</h2>
+              <p class="mt-2 text-sm leading-7 text-slate-600">헬스케어·투약 관리·OCR 유사 프로젝트 3건</p>
+            </a>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-center shadow-soft backdrop-blur">
+              <p class="text-2xl font-bold text-sky-700">10+</p>
+              <p class="text-xs text-slate-500">완료 프로젝트</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-center shadow-soft backdrop-blur">
+              <p class="text-2xl font-bold text-sky-700">6년+</p>
+              <p class="text-xs text-slate-500">개발 경험</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-center shadow-soft backdrop-blur">
+              <p class="text-2xl font-bold text-sky-700">133K+</p>
+              <p class="text-xs text-slate-500">헬스케어 LOC</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-center shadow-soft backdrop-blur">
+              <p class="text-2xl font-bold text-sky-700">140+</p>
+              <p class="text-xs text-slate-500">API 엔드포인트</p>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50 to-brand-50 p-6 text-center shadow-soft md:p-10">
+            <h2 class="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">함께 만들어 가겠습니다</h2>
+            <p class="mx-auto mt-3 max-w-lg text-sm leading-7 text-slate-600">각 메뉴를 클릭하시면 상세 내용을 확인하실 수 있습니다.</p>
+          </div>
+        </div>
+
+        <!-- PAGE: 프로젝트 소개 -->
+        <div id="page-overview" class="page-section space-y-6">
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-soft backdrop-blur md:p-8">
+            <article class="doc-content">
+              <h1>프로젝트 소개</h1>
+              <blockquote>임신 주수·모유 수유 여부 등 개인 상태에 따라 약물 위험도를 판정하고, 약사의 노하우가 반영된 텍스트 기반 안심 가이드를 제공하는 MVP 모바일 앱과 관리자 웹을 구축합니다.</blockquote>
+
+              <h2>프로젝트 개요</h2>
+              <table>
+                <tr><th>항목</th><th>내용</th></tr>
+                <tr><td>프로젝트명</td><td><a href="https://www.wishket.com/project/153527/" target="_blank" rel="noopener noreferrer" class="text-sky-700 underline decoration-sky-300 hover:decoration-sky-500">임산부 맞춤형 약물 복용 가이드 MVP 앱 구축</a></td></tr>
+                <tr><td>카테고리</td><td>헬스케어 · 모바일 앱 (iOS/Android) · 관리자 웹</td></tr>
+                <tr><td>제안 금액</td><td>2,700만원 (VAT 별도)</td></tr>
+                <tr><td>제안 기간</td><td>90일</td></tr>
+                <tr><td>핵심 기술</td><td>Flutter, Node.js (NestJS), PostgreSQL, Next.js, Google ML Kit</td></tr>
+              </table>
+
+              <h2>핵심 요구사항 분석</h2>
+              <ul>
+                <li><strong>If-Then 조건부 판정 알고리즘</strong> — 엑셀 기반의 약사 노하우를 시스템화하여, 임신 주수·모유 수유 여부에 따라 동일 약물의 상이한 위험도와 복약 가이드를 자동 산출</li>
+                <li><strong>약물 데이터베이스 구축</strong> — 엑셀 데이터의 일괄 업로드(Data Import) 및 관리자의 수동 등록·수정·삭제 지원</li>
+                <li><strong>주수별 예외 처리</strong> — 특정 주수 이상/이하 조건에 따른 분기 처리로 정밀한 결과값 도출</li>
+                <li><strong>OCR 약 봉투 인식</strong> (선택) — 스마트폰 카메라를 활용한 처방전/약 봉투 텍스트 자동 인식</li>
+                <li><strong>관리자 웹(Admin)</strong> — 회원 관리, 약물 DB 관리, 엑셀 임포트, CRUD 기능</li>
+                <li><strong>iOS/Android 동시 지원</strong> — 하이브리드 앱 1종으로 양 플랫폼 커버</li>
+              </ul>
+
+              <h2>제안 포인트</h2>
+              <p><strong>1. 헬스케어 도메인 실전 경험</strong></p>
+              <p>시니어 주간보호센터 투약 관리 플랫폼을 6개월간 풀스택으로 구축한 경험이 있습니다. 투약의뢰서, 전자서명, 건강 데이터 분석 등 의료·복약 도메인의 민감 정보 처리와 법적 요구사항을 숙지하고 있어, 임산부 약물 위험도 판정 시스템에 즉시 적용 가능합니다.</p>
+
+              <p><strong>2. If-Then 조건부 알고리즘 구현 역량</strong></p>
+              <p>사주(四柱) 분석 앱에서 복잡한 조건부 로직을 시스템화한 경험이 있습니다. 생년월일·시간에 따라 상이한 결과를 도출하는 구조가 임신 주수·모유 수유 여부에 따른 약물 위험도 판정과 동일한 패턴이므로, 엑셀 기반 판정 로직의 디지털화를 효율적으로 수행할 수 있습니다.</p>
+
+              <p><strong>3. OCR 모바일 연동 경험</strong></p>
+              <p>디지털 명함 플랫폼에서 카메라 기반 OCR 스캐닝을 Flutter 앱에 성공적으로 구현한 경험이 있어, 약 봉투/처방전 텍스트 인식 기능의 기술적 리스크를 최소화할 수 있습니다.</p>
+
+              <p><strong>4. 정부지원사업 산출물 대응</strong></p>
+              <p>요구사항 정의서, ERD, 화면설계서, 완료 보고서 등 정부지원사업 제출용 산출물을 체계적으로 관리하며, 사업 일정에 맞춘 단계별 납품이 가능합니다.</p>
+
+              <h2>사용 기술 및 툴</h2>
+              <h3>개발 기술</h3>
+              <div class="flex flex-wrap gap-2 not-prose mb-4">
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">Flutter</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">Dart</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">NestJS</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">Node.js</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">TypeScript</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">Next.js</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">React</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">PostgreSQL</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">Google ML Kit</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">Firebase</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">Docker</span>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">AWS</span>
+              </div>
+              <h3>협업 및 커뮤니케이션</h3>
+              <div class="flex flex-wrap gap-2 not-prose">
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">Slack / 카카오톡</span>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">Zoom / Google Meet</span>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">Notion / Google Docs</span>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">GitHub</span>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">Figma</span>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <!-- PAGE: 견적서 -->
+        <div id="page-estimate" class="page-section space-y-6">
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-soft backdrop-blur md:p-8">
+            <article class="doc-content">
+              <h1>견적서</h1>
+              <blockquote>본 견적서는 프로젝트 요구사항 분석을 기반으로 산출되었습니다. OCR 기능 포함/비포함 옵션을 별도 안내합니다.</blockquote>
+
+              <h2>견적 요약</h2>
+              <table>
+                <tr><th>항목</th><th>내용</th></tr>
+                <tr><td>프로젝트명</td><td>임산부 맞춤형 약물 복용 가이드 MVP 앱 구축</td></tr>
+                <tr><td>제안 금액 (OCR 포함)</td><td><strong>2,700만원 (VAT 별도)</strong></td></tr>
+                <tr><td>제안 금액 (OCR 비포함)</td><td><strong>2,400만원 (VAT 별도)</strong></td></tr>
+                <tr><td>제안 기간</td><td>90일</td></tr>
+                <tr><td>견적 유효기간</td><td>제안일로부터 30일</td></tr>
+              </table>
+
+              <h2>상세 견적 내역 (OCR 포함 기준)</h2>
+              <table>
+                <thead>
+                  <tr><th>구분</th><th>항목</th><th>수량</th><th>단가</th><th>금액</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>기획</td><td>요구사항 분석, 알고리즘 로직 흐름도, DB 스키마 설계</td><td>1식</td><td>-</td><td>400만원</td></tr>
+                  <tr><td>디자인</td><td>모바일 앱 UI/UX (12~15화면) + 관리자 웹 (5~7화면)</td><td>1식</td><td>-</td><td>350만원</td></tr>
+                  <tr><td>프론트엔드</td><td>Flutter 모바일 앱 (iOS/Android)</td><td>1식</td><td>-</td><td>650만원</td></tr>
+                  <tr><td>백엔드</td><td>API 서버, If-Then 매칭 알고리즘, 약물 DB, 엑셀 임포트</td><td>1식</td><td>-</td><td>650만원</td></tr>
+                  <tr><td>관리자 웹</td><td>회원 관리, 약물 CRUD, 데이터 임포트 관리 화면</td><td>1식</td><td>-</td><td>350만원</td></tr>
+                  <tr><td>OCR</td><td>약 봉투/처방전 텍스트 인식 (Google ML Kit)</td><td>1식</td><td>-</td><td>300만원</td></tr>
+                </tbody>
+                <tfoot>
+                  <tr><th colspan="4">합계 (VAT 별도)</th><th>2,700만원</th></tr>
+                </tfoot>
+              </table>
+
+              <h2>OCR 비포함 시 견적</h2>
+              <p>OCR 기능을 제외할 경우 <strong>300만원</strong>이 차감되어 <strong>총 2,400만원 (VAT 별도)</strong>으로 진행 가능합니다. OCR 기능은 2차 고도화 시 별도 모듈로 추가할 수 있도록 확장 가능한 구조로 설계합니다.</p>
+
+              <h2>산정 근거</h2>
+              <p>유사 프로젝트(헬스케어 투약 관리 플랫폼, 조건부 알고리즘 기반 앱) 수행 경험을 기반으로 기능별 공수를 산출하고, 단가를 적용하여 산정하였습니다. 정부지원사업 예산 범위 내에서 핵심 기능 위주의 MVP를 효율적으로 구현하는 데 초점을 맞추었습니다.</p>
+
+              <h2>포함 사항</h2>
+              <ul>
+                <li>소스 코드 전체 이관</li>
+                <li>개발 문서 (API 명세서, DB 스키마, 배포 가이드)</li>
+                <li>요구사항 정의서, 화면설계서, ERD</li>
+                <li>UI/UX 디자인 원본 파일 (Figma)</li>
+                <li>정부지원사업 제출용 완료 보고서 및 산출 증빙 서류</li>
+                <li>관리자 매뉴얼</li>
+                <li>1개월 무상 하자 보수</li>
+                <li>배포 환경 세팅 (1회)</li>
+              </ul>
+
+              <h2>불포함 사항</h2>
+              <ul>
+                <li>서버 호스팅 비용 (AWS 등)</li>
+                <li>도메인 구매 비용</li>
+                <li>앱스토어 개발자 계정 비용 (Apple $99/년, Google $25)</li>
+                <li>외부 유료 API 사용 비용</li>
+                <li>하자 보수 기간 이후 유지보수</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+
+        <!-- PAGE: 공수계산서 -->
+        <div id="page-manday" class="page-section space-y-6">
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-soft backdrop-blur md:p-8">
+            <article class="doc-content">
+              <h1>공수계산서</h1>
+              <blockquote>기능별 개발 공수(Man-Day)를 산출하여 일정과 비용의 근거를 제시합니다.</blockquote>
+
+              <h2>공수 요약</h2>
+              <table>
+                <tr><th>구분</th><th>공수 (M/D)</th><th>비율</th></tr>
+                <tr><td>기획/설계</td><td>10 M/D</td><td>17%</td></tr>
+                <tr><td>UI/UX 디자인</td><td>10 M/D</td><td>17%</td></tr>
+                <tr><td>프론트엔드 (모바일 앱)</td><td>15 M/D</td><td>25%</td></tr>
+                <tr><td>백엔드 + 관리자 웹</td><td>18 M/D</td><td>30%</td></tr>
+                <tr><td>QA/배포</td><td>7 M/D</td><td>11%</td></tr>
+                <tr><th>합계</th><th>60 M/D</th><th>100%</th></tr>
+              </table>
+
+              <h2>기능별 상세 공수</h2>
+              <table>
+                <thead>
+                  <tr><th>기능</th><th>세부 작업</th><th>담당</th><th>공수 (M/D)</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td rowspan="3">기획/설계</td><td>요구사항 분석 및 기능 명세서 작성</td><td>기획</td><td>3</td></tr>
+                  <tr><td>If-Then 판정 알고리즘 로직 흐름도 설계</td><td>기획</td><td>3</td></tr>
+                  <tr><td>약물 DB 스키마 설계 및 API 명세</td><td>설계</td><td>4</td></tr>
+
+                  <tr><td rowspan="3">UI/UX 디자인</td><td>와이어프레임 및 프로토타입</td><td>디자인</td><td>3</td></tr>
+                  <tr><td>모바일 앱 UI 디자인 (12~15화면)</td><td>디자인</td><td>5</td></tr>
+                  <tr><td>관리자 웹 UI 디자인 (5~7화면)</td><td>디자인</td><td>2</td></tr>
+
+                  <tr><td rowspan="4">프론트엔드 (모바일)</td><td>회원가입/로그인/프로필 입력 화면</td><td>FE</td><td>3</td></tr>
+                  <tr><td>약물 검색 및 결과 목록 화면</td><td>FE</td><td>4</td></tr>
+                  <tr><td>복약 안심 가이드 결과 화면</td><td>FE</td><td>3</td></tr>
+                  <tr><td>마이페이지 및 설정</td><td>FE</td><td>2</td></tr>
+                  <tr><td>OCR (선택)</td><td>약 봉투/처방전 카메라 인식</td><td>FE</td><td>3</td></tr>
+
+                  <tr><td rowspan="4">백엔드</td><td>인증/회원 관리 API</td><td>BE</td><td>3</td></tr>
+                  <tr><td>약물 DB 구축 및 엑셀 데이터 임포트</td><td>BE</td><td>4</td></tr>
+                  <tr><td>If-Then 매칭 알고리즘 구현 (주수별 분기)</td><td>BE</td><td>5</td></tr>
+                  <tr><td>관리자 웹 (FE+BE, 회원/약물 CRUD)</td><td>풀스택</td><td>6</td></tr>
+
+                  <tr><td rowspan="3">QA/배포</td><td>단위/통합 테스트</td><td>QA</td><td>3</td></tr>
+                  <tr><td>사용자 시나리오 테스트</td><td>QA</td><td>2</td></tr>
+                  <tr><td>앱스토어 심사 및 서버 배포</td><td>DevOps</td><td>2</td></tr>
+                </tbody>
+              </table>
+
+              <h2>산정 기준</h2>
+              <ul>
+                <li>1 M/D = 8시간 기준 (1인 1일 작업량)</li>
+                <li>주 5일 근무 기준</li>
+                <li>버퍼 10~15% 포함</li>
+                <li>유사 프로젝트 수행 경험 기반 효율적 개발</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+
+        <!-- PAGE: PRD -->
+        <div id="page-prd" class="page-section space-y-6">
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-soft backdrop-blur md:p-8">
+            <article class="doc-content">
+              <h1>PRD (Product Requirements Document)</h1>
+              <blockquote>프로젝트 요구사항을 정의하고 기능 범위를 명확히 합니다.</blockquote>
+
+              <h2>1. 프로젝트 배경 및 목적</h2>
+              <p>임신 중이거나 모유 수유 중인 여성은 약물 복용 시 태아/영유아에 미치는 영향을 우려하여 복용을 기피하거나, 반대로 정보 부족으로 위험한 약물을 복용하는 경우가 발생합니다. 본 프로젝트는 약사의 전문 노하우를 엑셀 기반 If-Then 판정 로직으로 시스템화하여, 개인의 임신 주수·수유 여부에 맞춤화된 약물 위험도 및 복약 안심 가이드를 제공하는 것을 목표로 합니다.</p>
+              <p>복잡한 AI 기술 대신 명확하고 안정적인 조건부 시나리오 로직을 적용하여 초기 MVP 모델을 완성하고, 신뢰도 높은 텍스트 기반 정보를 제공합니다.</p>
+
+              <h2>2. 사용자 정의</h2>
+              <table>
+                <thead>
+                  <tr><th>사용자 유형</th><th>설명</th><th>주요 기능</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>임산부/수유부 사용자</td><td>임신 중이거나 모유 수유 중인 여성</td><td>약물 검색, 위험도 확인, 복약 가이드 열람, OCR 인식</td></tr>
+                  <tr><td>관리자 (약사/대표자)</td><td>약물 DB 및 판정 알고리즘 관리</td><td>약물 등록/수정/삭제, 엑셀 임포트, 회원 조회</td></tr>
+                  <tr><td>자문단 (산부인과 전문의)</td><td>의학적 자문 및 가이드 검수</td><td>가이드 텍스트 검수 (시스템 외부)</td></tr>
+                </tbody>
+              </table>
+
+              <h2>3. 기능 요구사항</h2>
+
+              <h3>3.1 사용자 계정 및 정보 관리</h3>
+              <ul>
+                <li><strong>[필수]</strong> 이메일 또는 간편 로그인(카카오/Google) 연동 회원가입</li>
+                <li><strong>[필수]</strong> 프로필 입력: 임신 주수, 모유 수유 여부, 기본 건강 상태</li>
+                <li><strong>[필수]</strong> 마이페이지: 개인 정보 및 현재 상태 업데이트</li>
+              </ul>
+
+              <h3>3.2 약물 위험도 판정 및 매칭 시스템</h3>
+              <ul>
+                <li><strong>[필수]</strong> 약물 명칭 및 증상 텍스트 검색</li>
+                <li><strong>[필수]</strong> 사용자 데이터(임신 주수 등)와 약물별 조건(If-Then) 대조하여 결과값 산출</li>
+                <li><strong>[필수]</strong> 특정 주수 이상/이하 조건에 따른 상이한 결과값 도출 분기 처리</li>
+                <li><strong>[필수]</strong> 결과 화면: 약물 위험도 + 텍스트 기반 안심 가이드 출력</li>
+                <li><strong>[필수]</strong> 약사 노하우 반영: 엑셀 데이터로 정의된 상황별 세부 복약 지침 텍스트</li>
+              </ul>
+
+              <h3>3.3 OCR 약 봉투 인식 (선택)</h3>
+              <ul>
+                <li><strong>[선택]</strong> 스마트폰 카메라를 활용한 처방전/약 봉투 텍스트 자동 인식</li>
+                <li><strong>[선택]</strong> 인식된 약물명 자동 검색 연동</li>
+              </ul>
+
+              <h3>3.4 관리자 시스템 (Admin Web)</h3>
+              <ul>
+                <li><strong>[필수]</strong> 회원 목록 조회 및 상태 정보 모니터링</li>
+                <li><strong>[필수]</strong> 엑셀 데이터 기반 약물 정보 일괄 업로드 (Data Import)</li>
+                <li><strong>[필수]</strong> 신규 약물 등록: 약물 명칭, 주수별 If-Then 조건, 가이드 텍스트 수동 등록</li>
+                <li><strong>[필수]</strong> 약물 정보 수정 및 삭제</li>
+              </ul>
+
+              <h2>4. 비기능 요구사항</h2>
+              <table>
+                <thead>
+                  <tr><th>항목</th><th>요구사항</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>성능</td><td>약물 검색 및 판정 결과 응답 시간 500ms 이내</td></tr>
+                  <tr><td>보안</td><td>HTTPS 통신, JWT 인증, 개인 건강 정보 암호화 저장, SQL Injection 방어</td></tr>
+                  <tr><td>개인정보</td><td>개인정보 처리방침 준수, 민감 건강 정보 별도 암호화</td></tr>
+                  <tr><td>호환성</td><td>iOS 14+, Android 8.0+ 지원</td></tr>
+                  <tr><td>확장성</td><td>향후 AI 기반 판정 로직 업그레이드를 위한 모듈화 설계</td></tr>
+                </tbody>
+              </table>
+
+              <h2>5. 기술 제약사항</h2>
+              <ul>
+                <li>MVP 단계에서는 복잡한 AI 기술 대신 If-Then 조건부 로직만 적용</li>
+                <li>엑셀 기반 판정 알고리즘의 정확한 디지털화가 핵심 — 약사(대표자)와 긴밀한 협의 필요</li>
+                <li>의료 정보 특성상 결과 화면에 "전문의 상담 권장" 안내 문구 필수 포함</li>
+                <li>OCR 인식률은 인쇄 품질에 따라 차이 — 수동 입력 대안 필수 제공</li>
+              </ul>
+
+              <h2>6. 범위 외 사항 (Out of Scope)</h2>
+              <ul>
+                <li>실시간 약사/의사 상담 기능</li>
+                <li>AI/ML 기반 자동 판정 (2차 고도화 시 검토)</li>
+                <li>전자 처방전 연동 (의료기관 시스템 연계)</li>
+                <li>다국어 지원 (MVP는 한국어만)</li>
+                <li>결제/구독 시스템</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+
+        <!-- PAGE: 일정 제안 -->
+        <div id="page-timeline" class="page-section space-y-6">
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-soft backdrop-blur md:p-8">
+            <article class="doc-content">
+              <h1>일정 제안</h1>
+              <blockquote>총 90일 기준 4단계 마일스톤 및 산출물을 제안합니다. 착수일 기준 5월 초중순(예비창업패키지 선정 후)으로 가정합니다.</blockquote>
+
+              <h2>전체 일정 요약</h2>
+              <table>
+                <thead>
+                  <tr><th>단계</th><th>기간</th><th>주요 산출물</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Phase 1: 기획/설계</td><td>Day 1–14 (2주)</td><td>요구사항 정의서, ERD, API 명세서, 알고리즘 흐름도</td></tr>
+                  <tr><td>Phase 2: 디자인</td><td>Day 15–28 (2주)</td><td>와이어프레임, UI/UX 디자인 원본 (Figma)</td></tr>
+                  <tr><td>Phase 3: 개발</td><td>Day 29–72 (약 6주)</td><td>모바일 앱, 백엔드 API, 관리자 웹, OCR(선택)</td></tr>
+                  <tr><td>Phase 4: QA/배포</td><td>Day 73–90 (약 2.5주)</td><td>테스트 보고서, 앱스토어 배포, 완료 보고서</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-soft backdrop-blur md:p-8">
+            <h2 class="mb-4 text-sm font-semibold tracking-[0.14em] text-slate-500">상세 타임라인</h2>
+            <div class="timeline">
+              <div class="timeline-item">
+                <p class="text-sm font-semibold tracking-[0.14em] text-sky-700">PHASE 1</p>
+                <h4 class="text-base font-semibold text-slate-900">기획 및 설계</h4>
+                <p class="mb-1 text-xs font-semibold text-amber-600">Day 1–14</p>
+                <p class="text-sm leading-7 text-slate-600">대표자(약사)와 엑셀 기반 판정 알고리즘 로직 협의, 기능 명세서 작성, 약물 데이터베이스 스키마 설계, API 명세서 작성</p>
+                <ul class="mt-2 list-disc pl-5 text-sm text-slate-500">
+                  <li>산출물: 요구사항 정의서, If-Then 알고리즘 흐름도, ERD, API 명세서</li>
+                </ul>
+              </div>
+              <div class="timeline-item">
+                <p class="text-sm font-semibold tracking-[0.14em] text-sky-700">PHASE 2</p>
+                <h4 class="text-base font-semibold text-slate-900">UI/UX 디자인</h4>
+                <p class="mb-1 text-xs font-semibold text-amber-600">Day 15–28</p>
+                <p class="text-sm leading-7 text-slate-600">임산부 사용자를 고려한 직관적이고 편안한 디자인, 모바일 앱 및 관리자 웹 와이어프레임·시안 제작</p>
+                <ul class="mt-2 list-disc pl-5 text-sm text-slate-500">
+                  <li>산출물: 화면설계서, UI/UX 디자인 원본 (Figma), 디자인 시스템</li>
+                </ul>
+              </div>
+              <div class="timeline-item">
+                <p class="text-sm font-semibold tracking-[0.14em] text-sky-700">PHASE 3</p>
+                <h4 class="text-base font-semibold text-slate-900">개발</h4>
+                <p class="mb-1 text-xs font-semibold text-amber-600">Day 29–72</p>
+                <p class="text-sm leading-7 text-slate-600">Flutter 모바일 앱 개발 (회원/검색/결과/마이페이지), NestJS 백엔드 API, If-Then 매칭 알고리즘, 약물 DB 구축 및 엑셀 임포트, 관리자 웹(Next.js), OCR 연동(선택)</p>
+                <ul class="mt-2 list-disc pl-5 text-sm text-slate-500">
+                  <li>산출물: 프론트엔드/백엔드 소스 코드, 관리자 웹</li>
+                  <li>중간 점검: Day 50 — 핵심 기능(검색+판정+결과) 시연</li>
+                </ul>
+              </div>
+              <div class="timeline-item">
+                <p class="text-sm font-semibold tracking-[0.14em] text-sky-700">PHASE 4</p>
+                <h4 class="text-base font-semibold text-slate-900">QA 및 배포</h4>
+                <p class="mb-1 text-xs font-semibold text-amber-600">Day 73–90</p>
+                <p class="text-sm leading-7 text-slate-600">통합 테스트, 사용자 시나리오 테스트, 앱스토어 심사 제출(iOS/Android), 서버 배포, 관리자 매뉴얼 작성, 정부지원사업 완료 보고서</p>
+                <ul class="mt-2 list-disc pl-5 text-sm text-slate-500">
+                  <li>산출물: 테스트 보고서, 관리자 매뉴얼, 완료 보고서 및 산출 증빙 서류</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-soft backdrop-blur md:p-8">
+            <article class="doc-content">
+              <h2>마일스톤 체크포인트</h2>
+              <table>
+                <thead>
+                  <tr><th>마일스톤</th><th>시점</th><th>검수 기준</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>M1: 설계 완료</td><td>Day 14</td><td>요구사항 정의서 + ERD + 알고리즘 흐름도 승인</td></tr>
+                  <tr><td>M2: 디자인 완료</td><td>Day 28</td><td>UI/UX 디자인 시안 승인</td></tr>
+                  <tr><td>M3: 핵심 기능 시연</td><td>Day 50</td><td>약물 검색 → If-Then 판정 → 결과 화면 동작 확인</td></tr>
+                  <tr><td>M4: 최종 납품</td><td>Day 90</td><td>앱스토어 심사 제출 + 관리자 웹 + 전체 산출물 이관</td></tr>
+                </tbody>
+              </table>
+
+              <h2>커뮤니케이션 계획</h2>
+              <table>
+                <tr><th>항목</th><th>방식</th><th>주기</th></tr>
+                <tr><td>일일 진행 공유</td><td>Slack / 카카오톡</td><td>매일</td></tr>
+                <tr><td>주간 미팅</td><td>Zoom / Google Meet</td><td>주 1회</td></tr>
+                <tr><td>마일스톤 리뷰</td><td>화면 공유 + 문서</td><td>단계 완료 시</td></tr>
+                <tr><td>이슈 트래킹</td><td>GitHub Issues</td><td>상시</td></tr>
+              </table>
+            </article>
+          </div>
+        </div>
+
+        <!-- PAGE: 포트폴리오 -->
+        <div id="page-portfolio" class="page-section space-y-6">
+          <div class="rounded-2xl border border-slate-200/70 bg-white/95 p-5 shadow-soft backdrop-blur md:p-8">
+            <article class="doc-content">
+              <h1>유사 프로젝트 경험</h1>
+              <blockquote>본 프로젝트와 유사한 기능/기술 스택을 활용한 수행 경험을 소개합니다.</blockquote>
+            </article>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-center shadow-soft backdrop-blur">
+              <p class="text-2xl font-bold text-sky-700">10+</p>
+              <p class="text-xs text-slate-500">완료 프로젝트</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-center shadow-soft backdrop-blur">
+              <p class="text-2xl font-bold text-sky-700">6년+</p>
+              <p class="text-xs text-slate-500">개발 경험</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-center shadow-soft backdrop-blur">
+              <p class="text-2xl font-bold text-sky-700">133K+</p>
+              <p class="text-xs text-slate-500">헬스케어 LOC</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-4 text-center shadow-soft backdrop-blur">
+              <p class="text-2xl font-bold text-sky-700">140+</p>
+              <p class="text-xs text-slate-500">API 엔드포인트</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Harmony Link -->
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft backdrop-blur md:p-8">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-sky-100 text-sky-700 border-sky-200">헬스케어 · 투약 관리</div>
+              <h3 class="text-lg font-semibold tracking-tight text-slate-900">하모니 링크 — 시니어 주간보호 통합 관리 플랫폼</h3>
+              <p class="mt-1 text-xs text-slate-400">B2B SaaS · 헬스케어 · 약 6개월</p>
+              <div class="mt-3 doc-content">
+                <h4>프로젝트 개요</h4>
+                <p>노인 주간보호센터의 돌봄 기록, 투약 관리, 보호자 소통, AI 건강분석을 하나의 플랫폼으로 통합한 멀티플랫폼 관리 시스템. 133,000+ LOC, 140+ API 엔드포인트, 6개 플랫폼 지원.</p>
+                <h4>핵심 기능</h4>
+                <ul>
+                  <li>전자서명 기반 투약의뢰서 — 법적 규정 준수 및 투약 사고 예방</li>
+                  <li>AI 건강분석 (OpenAI 연동) — 건강 데이터 자동 분석 및 이상 징후 감지</li>
+                  <li>보호자 소통 — 실시간 푸시 알림, 돌봄 기록 공유</li>
+                  <li>다중시설 관리 — 멀티테넌트 아키텍처</li>
+                </ul>
+                <h4>본 프로젝트와의 유사점</h4>
+                <p><strong>헬스케어 도메인 + 투약 관리</strong>라는 가장 직접적인 연관성을 가진 프로젝트입니다. 투약의뢰서, 건강 데이터 관리, 민감 의료 정보 보안 처리 경험이 임산부 약물 위험도 판정 시스템에 직접 활용 가능합니다. Flutter 크로스플랫폼 + NestJS 백엔드 + 관리자 웹(Next.js) 구성도 동일합니다.</p>
+                <h4>기술 스택</h4>
+                <div class="flex flex-wrap gap-1.5 not-prose">
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Flutter</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">NestJS</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Next.js</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">TypeScript</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">MySQL</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">AWS CDK</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Firebase</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Connectin -->
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft backdrop-blur md:p-8">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-sky-100 text-sky-700 border-sky-200">OCR · 매칭 플랫폼</div>
+              <h3 class="text-lg font-semibold tracking-tight text-slate-900">커넥틴 — 디지털 명함 & 네트워킹 플랫폼</h3>
+              <p class="mt-1 text-xs text-slate-400">B2B 플랫폼 · 3개월</p>
+              <div class="mt-3 doc-content">
+                <h4>프로젝트 개요</h4>
+                <p>물리적 명함 교환의 한계를 해결하기 위해 OCR 스캐닝, E2E 암호화 메시징, BLE/GPS 근거리 탐색을 결합한 디지털 명함 & 네트워킹 플랫폼. 12개 마이크로서비스, 63 API 엔드포인트.</p>
+                <h4>핵심 기능</h4>
+                <ul>
+                  <li>OCR 명함 스캐닝 — 카메라로 물리적 명함 촬영 시 자동 디지털 변환</li>
+                  <li>Signal Protocol E2E 암호화 메시징 — 금융급 보안 수준</li>
+                  <li>BLE + GPS 근거리 탐색 — 주변 사용자 실시간 발견</li>
+                  <li>관리자 패널 — 역할 기반 권한, 대량 사용자 관리</li>
+                </ul>
+                <h4>본 프로젝트와의 유사점</h4>
+                <p><strong>OCR 카메라 인식 + 매칭 알고리즘</strong>이 핵심 유사점입니다. 명함 OCR 스캐닝 → 텍스트 자동 인식 → 데이터 매칭의 흐름이 약 봉투 OCR → 약물명 인식 → If-Then 판정과 동일한 패턴입니다. Flutter 크로스플랫폼 구현 경험과 민감 정보 보안 처리도 직접 활용됩니다.</p>
+                <h4>기술 스택</h4>
+                <div class="flex flex-wrap gap-1.5 not-prose">
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Flutter</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Next.js</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Express</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">PostgreSQL</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Docker</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Firebase</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Fortune App -->
+            <div class="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-soft backdrop-blur md:p-8">
+              <div class="mb-3 inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold tracking-[0.12em] bg-sky-100 text-sky-700 border-sky-200">조건부 알고리즘 · 모바일 앱</div>
+              <h3 class="text-lg font-semibold tracking-tight text-slate-900">운세 앱 — 사주 기반 맞춤형 분석 앱</h3>
+              <p class="mt-1 text-xs text-slate-400">B2C 앱 · 3개월</p>
+              <div class="mt-3 doc-content">
+                <h4>프로젝트 개요</h4>
+                <p>사주(四柱) 기반 맞춤형 운세·행운의 번호·궁합 추천 모바일 앱. Flutter 단일 코드베이스로 iOS + Android 동시 출시, 기획부터 출시까지 3개월 풀패키지 딜리버리.</p>
+                <h4>핵심 기능</h4>
+                <ul>
+                  <li>생년월일/시간 입력 기반 사주 분석 — 복잡한 조건부 로직 시스템화</li>
+                  <li>사주 맞춤형 행운의 번호 추천 — 조건별 결과값 분기 처리</li>
+                  <li>대인 궁합 분석 — 다중 조건 매칭</li>
+                  <li>포인트 & 리워드 데일리 체크인 시스템</li>
+                </ul>
+                <h4>본 프로젝트와의 유사점</h4>
+                <p><strong>복잡한 조건부(If-Then) 알고리즘을 모바일 앱으로 구현</strong>한 가장 직접적인 경험입니다. 생년월일·시간에 따라 상이한 결과를 도출하는 구조가 임신 주수·수유 여부에 따른 약물 위험도 판정과 동일한 패턴입니다. Flutter + Firebase + Node.js 기술 스택과 3개월 빠른 딜리버리 경험도 본 프로젝트에 그대로 적용됩니다.</p>
+                <h4>기술 스택</h4>
+                <div class="flex flex-wrap gap-1.5 not-prose">
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Flutter</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Dart</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Firebase</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Node.js</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">BLoC</span>
+                  <span class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-sm text-slate-500">Clean Architecture</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50 to-brand-50 p-6 text-center shadow-soft md:p-10">
+            <h2 class="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">함께 만들어 가겠습니다</h2>
+            <p class="mx-auto mt-3 max-w-lg text-sm leading-7 text-slate-600">프로젝트에 대해 더 자세한 논의를 원하시면 미팅을 신청해 주세요.</p>
+          </div>
+        </div>
+
+        <!-- Bottom Page Navigation -->
+        <div id="page-nav" class="mt-6 flex items-center justify-between gap-4" style="display:none;">
+          <a id="nav-prev" href="#home"
+             class="group flex items-center gap-2 rounded-2xl border border-slate-200/70 bg-white/90 px-5 py-3 shadow-soft backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white">
+            <svg class="w-5 h-5 text-slate-400 transition group-hover:text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            <span>
+              <span class="block text-xs text-slate-400">이전</span>
+              <span id="nav-prev-label" class="block text-sm font-semibold text-slate-700 group-hover:text-sky-700">홈</span>
+            </span>
+          </a>
+          <a id="nav-next" href="#overview"
+             class="group flex items-center gap-2 rounded-2xl border border-slate-200/70 bg-white/90 px-5 py-3 shadow-soft backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white text-right ml-auto">
+            <span>
+              <span class="block text-xs text-slate-400">다음</span>
+              <span id="nav-next-label" class="block text-sm font-semibold text-slate-700 group-hover:text-sky-700">프로젝트 소개</span>
+            </span>
+            <svg class="w-5 h-5 text-slate-400 transition group-hover:text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+
+      </main>
+    </div>
+
+    <footer class="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-500">
+      &copy; 2026 &middot; 본 제안서는 임산부 맞춤형 약물 복용 가이드 MVP 앱 구축 프로젝트를 위해 작성되었습니다.
+    </footer>
+  </div>
+
+  <!-- SPA Router -->
+  <script>
+    const pages = ['home', 'overview', 'estimate', 'manday', 'prd', 'timeline', 'portfolio'];
+    const pageLabels = {
+      home: '홈', overview: '프로젝트 소개', estimate: '견적서',
+      manday: '공수계산서', prd: 'PRD', timeline: '일정 제안', portfolio: '유사 프로젝트 경험'
+    };
+
+    function navigate(pageId) {
+      if (!pages.includes(pageId)) pageId = 'home';
+      document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById('page-' + pageId);
+      if (target) target.classList.add('active');
+      document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.dataset.page === pageId) {
+          link.className = 'nav-link block rounded-xl border px-3 py-2 text-sm border-sky-200 bg-sky-50 font-medium text-sky-700';
+        } else {
+          link.className = 'nav-link block rounded-xl border border-transparent px-3 py-2 text-sm text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900';
+        }
+      });
+      updatePageNav(pageId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      closeSidebar();
+    }
+
+    function updatePageNav(pageId) {
+      const nav = document.getElementById('page-nav');
+      const idx = pages.indexOf(pageId);
+      const prevBtn = document.getElementById('nav-prev');
+      const nextBtn = document.getElementById('nav-next');
+      const prevLabel = document.getElementById('nav-prev-label');
+      const nextLabel = document.getElementById('nav-next-label');
+      nav.style.display = (pageId === 'home') ? 'none' : 'flex';
+      if (idx > 0) {
+        prevBtn.href = '#' + pages[idx - 1];
+        prevLabel.textContent = pageLabels[pages[idx - 1]];
+        prevBtn.style.visibility = 'visible';
+      } else {
+        prevBtn.style.visibility = 'hidden';
+      }
+      if (idx < pages.length - 1) {
+        nextBtn.href = '#' + pages[idx + 1];
+        nextLabel.textContent = pageLabels[pages[idx + 1]];
+        nextBtn.style.visibility = 'visible';
+      } else {
+        nextBtn.style.visibility = 'hidden';
+      }
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-backdrop').classList.remove('open');
+    }
+
+    function handleHash() {
+      const hash = (location.hash || '#home').replace('#', '');
+      navigate(hash);
+    }
+    window.addEventListener('hashchange', handleHash);
+    window.addEventListener('DOMContentLoaded', handleHash);
+
+    document.getElementById('sidebar-toggle').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebar-backdrop').classList.toggle('open');
+    });
+  </script>
+</body>
+</html>
